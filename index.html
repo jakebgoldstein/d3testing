@@ -31,7 +31,7 @@
           height = +svg.attr("height"),
           tooltip = d3.select(".tooltip");
 
-    d3.csv("starwars.csv").then(data => {
+    d3.csv("data/starwars.csv").then(data => {
       data = data.filter(d => d.height && d.mass);
       data.forEach(d => {
         d.height = +d.height;
