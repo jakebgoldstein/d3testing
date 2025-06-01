@@ -1,14 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>D3 Sandbox</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Star Wars: Height vs Mass</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    circle:hover {
+      stroke: black;
+      stroke-width: 1.5px;
+    }
+    .tooltip {
+      position: absolute;
+      background-color: white;
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      pointer-events: none;
+      font-size: 0.9em;
+    }
+  </style>
 </head>
 <body>
-  <h1>D3.js Sandbox – Bar Chart Example</h1>
-  <div id="chart"></div>
-  <script src="js/barChart.js"></script>
+  <h2>Star Wars Characters: Height vs Mass</h2>
+  <svg width="800" height="500"></svg>
+  <div class="tooltip" style="opacity:0; position:absolute;"></div>
+
+  <script>
+    const svg = d3.select("svg"),
+          width = +svg.attr("width"),
+          height = +svg.attr("height"),
+          tooltip = d3.select(".tooltip");
+
+    d3.csv("starwars.csv").then(data => {
+      data = data.filter(d => d.height && d.mass);
+      data.forEach(d => {
+        d.height = +d.height;
+        d.mass = +d.mass;
+      });
+
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.mass)]).nice()
+        .range([60, width - 40]);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.height)]).nice()
+        .range([height - 40, 40]);
+
+      const color = d3.scaleOrdinal()
+        .domain([...new Set(data.map(d => d.gender))])
+        .range(d3.schemeSet2);
+
+      svg.append("g")
+        .attr("transform", `translate(0, ${height - 40})`)
+        .call(d3.axisBottom(x));
+      svg.append("g")
+        .attr("transform", `translate(60, 0)`)
+        .call(d3.axisLeft(y));
+
+      svg.selectAll("circle")
+        .data(data)
+        .join("circle")
+        .attr("cx", d => x(d.mass))
+        .attr("cy", d => y(d.height))
+        .attr("r", 5)
+        .attr("fill", d => color(d.gender))
+        .on("mouseover", (e, d) => {
+          tooltip.style("opacity", 1)
+                 .html(`<strong>${d.name}</strong><br/>Height: ${d.height}<br/>Mass: ${d.mass}`)
+                 .style("left", (e.pageX + 10) + "px")
+                 .style("top", (e.pageY - 20) + "px");
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0));
+    });
+  </script>
 </body>
 </html>
