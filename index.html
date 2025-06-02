@@ -3,74 +3,101 @@
 <head>
   <meta charset="UTF-8" />
   <title>Star Wars: Height vs Mass</title>
+
+  <!-- Load the D3.js v7 library from CDN -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- Basic styling for page, circles, and tooltip -->
   <style>
-    body { font-family: sans-serif; }
+    body {
+      font-family: sans-serif; /* Clean font */
+    }
+
     circle:hover {
-      stroke: black;
+      stroke: black;           /* Outline the circle on hover */
       stroke-width: 1.5px;
     }
+
     .tooltip {
-      position: absolute;
+      position: absolute;      /* Let it float over the SVG */
       background-color: white;
       padding: 4px 8px;
       border: 1px solid #ccc;
-      pointer-events: none;
+      pointer-events: none;    /* Tooltip won't interfere with mouse events */
       font-size: 0.9em;
     }
   </style>
 </head>
+
 <body>
+  <!-- Title of the visualization -->
   <h2>Star Wars Characters: Height vs Mass</h2>
+
+  <!-- The SVG canvas where the graph will be drawn -->
   <svg width="800" height="500"></svg>
+
+  <!-- Tooltip div (initially invisible) -->
   <div class="tooltip" style="opacity:0; position:absolute;"></div>
 
   <script>
-    const svg = d3.select("svg"),
-          width = +svg.attr("width"),
-          height = +svg.attr("height"),
-          tooltip = d3.select(".tooltip");
+    // Set up the SVG and dimensions
+    const svg = d3.select("svg"),           // Select the <svg> element
+          width = +svg.attr("width"),       // Get the width (800)
+          height = +svg.attr("height"),     // Get the height (500)
+          tooltip = d3.select(".tooltip");  // Select the tooltip div
 
+    // Load the CSV data
     d3.csv("data/starwars.csv").then(data => {
+      // Filter out rows missing height or mass
       data = data.filter(d => d.height && d.mass);
+
+      // Convert height and mass from strings to numbers
       data.forEach(d => {
         d.height = +d.height;
         d.mass = +d.mass;
       });
 
+      // Create x-axis scale (mass)
       const x = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.mass)]).nice()
-        .range([60, width - 40]);
+        .domain([0, d3.max(data, d => d.mass)]) // from 0 to max mass
+        .nice()                                 // round up for aesthetics
+        .range([60, width - 40]);               // map to horizontal space
 
+      // create y-axis scale (height)
       const y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.height)]).nice()
-        .range([height - 40, 40]);
+        .domain([0, d3.max(data, d => d.height)])
+        .nice()
+        .range([height - 40, 40]);              // invert: higher y = taller
 
-      const color = d3.scaleOrdinal()
-        .domain([...new Set(data.map(d => d.gender))])
-        .range(d3.schemeSet2);
-
+      // Add x-axis to the bottom of the SVG
       svg.append("g")
-        .attr("transform", `translate(0, ${height - 40})`)
-        .call(d3.axisBottom(x));
-      svg.append("g")
-        .attr("transform", `translate(60, 0)`)
-        .call(d3.axisLeft(y));
+        .attr("transform", `translate(0, ${height - 40})`) // position it
+        .call(d3.axisBottom(x));                           // draw x-axis
 
+      // Add y-axis to the left
+      svg.append("g")
+        .attr("transform", `translate(60, 0)`) // offset so it doesn't clip
+        .call(d3.axisLeft(y));                // draw y-axis
+
+      // Draw the data points as circles
       svg.selectAll("circle")
-        .data(data)
-        .join("circle")
-        .attr("cx", d => x(d.mass))
-        .attr("cy", d => y(d.height))
-        .attr("r", 5)
-        .attr("fill", d => color(d.gender))
+        .data(data)          // bind data
+        .join("circle")      // for each row, create a circle
+        .attr("cx", d => x(d.mass))   // x-position based on mass
+        .attr("cy", d => y(d.height)) // y-position based on height
+        .attr("r", 5)                 // radius of each circle
+        .attr("fill", d => color(d.gender)) // color by gender
+
+        // hover interaction
         .on("mouseover", (e, d) => {
+          // Show tooltip and populate it with character data
           tooltip.style("opacity", 1)
                  .html(`<strong>${d.name}</strong><br/>Height: ${d.height}<br/>Mass: ${d.mass}`)
-                 .style("left", (e.pageX + 10) + "px")
-                 .style("top", (e.pageY - 20) + "px");
+                 .style("left", (e.pageX + 10) + "px")  // offset x position
+                 .style("top", (e.pageY - 20) + "px");  // offset y position
         })
-        .on("mouseout", () => tooltip.style("opacity", 0));
+
+        .on("mouseout", () => tooltip.style("opacity", 0)); // hide tooltip
     });
   </script>
 </body>
